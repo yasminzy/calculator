@@ -15,16 +15,6 @@ const updateInputScreen = (char) => {
   scrInput.value += char
 }
 
-const handleNumber = (number) => {
-  currentNumber == 0 && !currentNumber.includes(".")
-    ? (currentNumber = number)
-    : (currentNumber += number)
-
-  prevNumber == "" && calcOperator == ""
-    ? (scrInput.value = currentNumber)
-    : updateInputScreen(number)
-}
-
 const clearAll = () => {
   scrInput.value = "0"
   scrOutput.value = ""
@@ -37,29 +27,22 @@ clearBtn.addEventListener("click", () => {
   clearAll()
 })
 
-percentageBtn.addEventListener("click", (event) => {
-  // prevent multiple percent signs as well as percent sign right after dot
-  if (
-    !currentNumber.includes("%") &&
-    scrInput.value.charAt(scrInput.value.length - 1) !== "."
-  ) {
-    updateInputScreen(event.target.value)
-    currentNumber = currentNumber / 100
+const handleNumber = (number) => {
+  // prevent repeated 0 and 0 before other number
+  currentNumber == 0 && !currentNumber.includes(".")
+    ? (currentNumber = number)
+    : (currentNumber += number)
+
+  // first number
+  if (prevNumber == "" && calcOperator == "") {
+    scrInput.value = currentNumber
   }
-})
 
-operatorsBtn.forEach((operator) => {
-  operator.addEventListener("click", (event) => {
-    // prevent multiple operator signs
-    if (!calcOperator) {
-      prevNumber = currentNumber
-      updateInputScreen(event.target.value)
-    }
-
-    calcOperator = event.target.value
-    currentNumber = "0"
-  })
-})
+  // second number
+  if (prevNumber != "" && calcOperator != "") {
+    scrInput.value = `${prevNumber}${calcOperator}${currentNumber}`
+  }
+}
 
 numbersBtn.forEach((number) => {
   number.addEventListener("click", (event) => {
@@ -73,12 +56,50 @@ numbersBtn.forEach((number) => {
   })
 })
 
+const okForPercentAndDot = (char1, char2) => {
+  /*
+    percent and dot can be added if:
+    1. they are not in the current number yet
+    2. they are not right beside each other
+    3. they are not right after operator sign
+    4. the output is still empty
+  */
+
+  const lastChar = scrInput.value.charAt(scrInput.value.length - 1)
+
+  return (
+    !currentNumber.includes(char1) &&
+    lastChar !== char2 &&
+    ["+", "-", "*", "/"].indexOf(lastChar) === -1 &&
+    !scrOutput.value
+  )
+}
+
+percentageBtn.addEventListener("click", (event) => {
+  if (okForPercentAndDot(event.target.value, ".")) {
+    updateInputScreen(event.target.value)
+    currentNumber = currentNumber / 100
+  }
+})
+
 decimalBtn.addEventListener("click", (event) => {
-  // prevent multiple dots in a number
-  if (!currentNumber.includes(".")) {
+  if (okForPercentAndDot(event.target.value, "%")) {
     updateInputScreen(event.target.value)
     currentNumber += event.target.value
   }
+})
+
+operatorsBtn.forEach((operator) => {
+  operator.addEventListener("click", (event) => {
+    // prevent multiple operator signs
+    if (!calcOperator && !scrOutput.value) {
+      prevNumber = currentNumber
+      updateInputScreen(event.target.value)
+    }
+
+    calcOperator = event.target.value
+    currentNumber = "0"
+  })
 })
 
 equalBtn.addEventListener("click", () => {
